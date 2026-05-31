@@ -1345,7 +1345,8 @@ local function collect_gap_cuts(element)
     local cuts = {}
     if element.slider.markerF then
         for n, marker in ipairs(element.slider.markerF()) do
-            if n > 1 and marker >= element.slider.min.value and marker <= element.slider.max.value then
+            local sk = n > 1 or state.chapter_list[1].time > 0
+            if sk and marker >= element.slider.min.value and marker <= element.slider.max.value then
                 cuts[#cuts + 1] = get_slider_ele_pos_for(element, marker)
             end
         end
@@ -1513,7 +1514,8 @@ local function draw_seekbar_nibbles(element, elem_ass)
     -- draw non-current chapter nibbles
     local has_non_current = false
     for n, marker in ipairs(markers) do
-        if n > 1 and (n - 1) ~= current_chapter and marker >= element.slider.min.value and marker <= element.slider.max.value then
+        local sk = n > 1 or state.chapter_list[1].time > 0
+        if sk and (n - 1) ~= current_chapter and marker >= element.slider.min.value and marker <= element.slider.max.value then
             if not has_non_current then
                 begin_draw_layer(element, elem_ass, user_opts.nibble_color)
                 has_non_current = true
@@ -1523,7 +1525,7 @@ local function draw_seekbar_nibbles(element, elem_ass)
     end
 
     -- draw current chapter nibble on top
-    if current_chapter > 0 and current_chapter < #markers then
+    if (current_chapter > 0 or (state.chapter_list[1].time > 0 and current_chapter >= 0)) and current_chapter < #markers then
         local marker = markers[current_chapter + 1]
         if marker >= element.slider.min.value and marker <= element.slider.max.value then
             begin_draw_layer(element, elem_ass, user_opts.nibble_current_color)
@@ -2129,14 +2131,15 @@ end
 
 -- Default layout
 layouts["default"] = function ()
+    local have_ch = #state.chapter_list > 0
     local no_title = not user_opts.show_title
     local no_chapter = not user_opts.show_chapter_title
     local chapter_index = user_opts.show_chapter_title and (state.chapter or -1) >= 0
-    local chapter_h = (no_chapter or not chapter_index) and 0 or user_opts.chapter_title_font_size
-    local chapter_offset = (no_chapter or not chapter_index) and 0 or user_opts.chapter_title_offset
+    local chapter_h = (no_chapter or not have_ch) and 0 or user_opts.chapter_title_font_size
+    local chapter_offset = (no_chapter or not have_ch) and 0 or user_opts.chapter_title_offset
     chapter_offset = user_opts.chapter_above_title and user_opts.chapter_above_title_offset or chapter_offset
     local title_h = no_title and 0 or user_opts.title_font_size
-    local title_offset = (no_chapter or not chapter_index or user_opts.chapter_above_title) and user_opts.title_offset or user_opts.title_with_chapter_offset
+    local title_offset = (no_chapter or not have_ch or user_opts.chapter_above_title) and user_opts.title_offset or user_opts.title_with_chapter_offset
     title_offset = no_title and 0 or title_offset
     local title_and_chapter_h_with_offset = chapter_h + chapter_offset + title_h + title_offset
 
@@ -2237,11 +2240,11 @@ layouts["default"] = function ()
         chapter_title_y = title_y + title_h + chapter_offset
     else
         chapter_title_y = user_opts.osc_height + chapter_offset
-        title_y = (no_chapter or not chapter_index) and (user_opts.osc_height + title_offset) or (chapter_title_y + chapter_h + user_opts.title_with_chapter_offset)
+        title_y = (no_chapter or not have_ch) and (user_opts.osc_height + title_offset) or (chapter_title_y + chapter_h + user_opts.title_with_chapter_offset)
     end
 
     -- osc title
-    local title_w = (no_chapter or not chapter_index or user_opts.chapter_above_title) and (osc_geo.w - 60 - time_codes_width) or (osc_geo.w - 50)
+    local title_w = (no_chapter or not have_ch or user_opts.chapter_above_title) and (osc_geo.w - 60 - time_codes_width) or (osc_geo.w - 50)
     state.title_max_w = title_w
     if title_w < 0 then title_w = 0 end
     elements["title"].visible = not no_title
@@ -2254,7 +2257,7 @@ layouts["default"] = function ()
 
     -- chapter title
     if user_opts.show_chapter_title then
-        elements["chapter_title"].visible = not no_chapter and chapter_index
+        elements["chapter_title"].visible = not no_chapter and have_ch
         local chapter_title_w = narrow_win and (osc_geo.w - time_codes_width - 60) or (osc_geo.w - 60)
         geo = {x = 26, y = refY - chapter_title_y, an = 1, w = chapter_title_w, h = user_opts.chapter_title_font_size}
         lo = add_layout("chapter_title")
@@ -2324,7 +2327,7 @@ layouts["default"] = function ()
         -- try to vertically align time codes to the baseline of title/chapter
         if not user_opts.show_title and not user_opts.show_chapter_title then
             time_codes_y = user_opts.time_codes_offset + user_opts.osc_height + user_opts.title_offset
-        elseif no_chapter or not chapter_index or user_opts.chapter_above_title then
+        elseif no_chapter or not have_ch or user_opts.chapter_above_title then
             time_codes_y = title_y + ((title_h - user_opts.time_font_size) * 0.25)
         else
             time_codes_y = chapter_title_y
@@ -2416,14 +2419,15 @@ layouts["default"] = function ()
 end
 
 layouts["compact"] = function ()
+    local have_ch = #state.chapter_list > 0
     local chapter_index = (state.chapter or -1) >= 0
     local no_title = not user_opts.show_title
     local no_chapter = not user_opts.show_chapter_title
-    local chapter_h = (no_chapter or not chapter_index) and 0 or user_opts.chapter_title_font_size
-    local chapter_offset = (no_chapter or not chapter_index) and 0 or user_opts.chapter_title_offset
+    local chapter_h = (no_chapter or not have_ch) and 0 or user_opts.chapter_title_font_size
+    local chapter_offset = (no_chapter or not have_ch) and 0 or user_opts.chapter_title_offset
     chapter_offset = user_opts.chapter_above_title and user_opts.chapter_above_title_offset or chapter_offset
     local title_h = no_title and 0 or user_opts.title_font_size
-    local title_offset = (no_chapter or not chapter_index or user_opts.chapter_above_title) and user_opts.title_offset or user_opts.title_with_chapter_offset
+    local title_offset = (no_chapter or not have_ch or user_opts.chapter_above_title) and user_opts.title_offset or user_opts.title_with_chapter_offset
     title_offset = no_title and 0 or title_offset
     local title_and_chapter_h_with_offset = chapter_h + chapter_offset + title_h + title_offset
 
@@ -2499,7 +2503,7 @@ layouts["compact"] = function ()
         chapter_title_y = title_y + title_h + chapter_offset
     else
         chapter_title_y = user_opts.osc_height + chapter_offset
-        title_y = (no_chapter or not chapter_index) and (user_opts.osc_height + title_offset) or (chapter_title_y + chapter_h + user_opts.title_with_chapter_offset)
+        title_y = (no_chapter or not have_ch) and (user_opts.osc_height + title_offset) or (chapter_title_y + chapter_h + user_opts.title_with_chapter_offset)
     end
 
     -- osc title
@@ -2516,7 +2520,7 @@ layouts["compact"] = function ()
 
     -- chapter title
     if user_opts.show_chapter_title then
-        elements["chapter_title"].visible = not no_chapter and chapter_index
+        elements["chapter_title"].visible = not no_chapter and have_ch
         geo = {x = 25, y = refY - chapter_title_y, an = 1, w = osc_geo.w - 60, h = user_opts.chapter_title_font_size}
         lo = add_layout("chapter_title")
         lo.geometry = geo
