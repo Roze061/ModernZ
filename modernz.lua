@@ -1345,7 +1345,7 @@ local function collect_gap_cuts(element)
     local cuts = {}
     if element.slider.markerF then
         for n, marker in ipairs(element.slider.markerF()) do
-            local sk = n > 1 or state.chapter_list[1].time > 0
+            local sk = n > 1 or (state.chapter_list[1] and state.chapter_list[1].time > 0)
             if sk and marker >= element.slider.min.value and marker <= element.slider.max.value then
                 cuts[#cuts + 1] = get_slider_ele_pos_for(element, marker)
             end
