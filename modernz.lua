@@ -2131,15 +2131,14 @@ end
 
 -- Default layout
 layouts["default"] = function ()
-    local have_ch = #state.chapter_list > 0
     local no_title = not user_opts.show_title
     local no_chapter = not user_opts.show_chapter_title
     local chapter_index = user_opts.show_chapter_title and (state.chapter or -1) >= 0
-    local chapter_h = (no_chapter or not have_ch) and 0 or user_opts.chapter_title_font_size
-    local chapter_offset = (no_chapter or not have_ch) and 0 or user_opts.chapter_title_offset
+    local chapter_h = (no_chapter or not chapter_index) and 0 or user_opts.chapter_title_font_size
+    local chapter_offset = (no_chapter or not chapter_index) and 0 or user_opts.chapter_title_offset
     chapter_offset = user_opts.chapter_above_title and user_opts.chapter_above_title_offset or chapter_offset
     local title_h = no_title and 0 or user_opts.title_font_size
-    local title_offset = (no_chapter or not have_ch or user_opts.chapter_above_title) and user_opts.title_offset or user_opts.title_with_chapter_offset
+    local title_offset = (no_chapter or not chapter_index or user_opts.chapter_above_title) and user_opts.title_offset or user_opts.title_with_chapter_offset
     title_offset = no_title and 0 or title_offset
     local title_and_chapter_h_with_offset = chapter_h + chapter_offset + title_h + title_offset
 
@@ -2240,11 +2239,11 @@ layouts["default"] = function ()
         chapter_title_y = title_y + title_h + chapter_offset
     else
         chapter_title_y = user_opts.osc_height + chapter_offset
-        title_y = (no_chapter or not have_ch) and (user_opts.osc_height + title_offset) or (chapter_title_y + chapter_h + user_opts.title_with_chapter_offset)
+        title_y = (no_chapter or not chapter_index) and (user_opts.osc_height + title_offset) or (chapter_title_y + chapter_h + user_opts.title_with_chapter_offset)
     end
 
     -- osc title
-    local title_w = (no_chapter or not have_ch or user_opts.chapter_above_title) and (osc_geo.w - 60 - time_codes_width) or (osc_geo.w - 50)
+    local title_w = (no_chapter or not chapter_index or user_opts.chapter_above_title) and (osc_geo.w - 60 - time_codes_width) or (osc_geo.w - 50)
     state.title_max_w = title_w
     if title_w < 0 then title_w = 0 end
     elements["title"].visible = not no_title
@@ -2257,7 +2256,7 @@ layouts["default"] = function ()
 
     -- chapter title
     if user_opts.show_chapter_title then
-        elements["chapter_title"].visible = not no_chapter and have_ch
+        elements["chapter_title"].visible = not no_chapter and chapter_index
         local chapter_title_w = narrow_win and (osc_geo.w - time_codes_width - 60) or (osc_geo.w - 60)
         geo = {x = 26, y = refY - chapter_title_y, an = 1, w = chapter_title_w, h = user_opts.chapter_title_font_size}
         lo = add_layout("chapter_title")
@@ -2327,7 +2326,7 @@ layouts["default"] = function ()
         -- try to vertically align time codes to the baseline of title/chapter
         if not user_opts.show_title and not user_opts.show_chapter_title then
             time_codes_y = user_opts.time_codes_offset + user_opts.osc_height + user_opts.title_offset
-        elseif no_chapter or not have_ch or user_opts.chapter_above_title then
+        elseif no_chapter or not chapter_index or user_opts.chapter_above_title then
             time_codes_y = title_y + ((title_h - user_opts.time_font_size) * 0.25)
         else
             time_codes_y = chapter_title_y
@@ -2419,15 +2418,14 @@ layouts["default"] = function ()
 end
 
 layouts["compact"] = function ()
-    local have_ch = #state.chapter_list > 0
     local chapter_index = (state.chapter or -1) >= 0
     local no_title = not user_opts.show_title
     local no_chapter = not user_opts.show_chapter_title
-    local chapter_h = (no_chapter or not have_ch) and 0 or user_opts.chapter_title_font_size
-    local chapter_offset = (no_chapter or not have_ch) and 0 or user_opts.chapter_title_offset
+    local chapter_h = (no_chapter or not chapter_index) and 0 or user_opts.chapter_title_font_size
+    local chapter_offset = (no_chapter or not chapter_index) and 0 or user_opts.chapter_title_offset
     chapter_offset = user_opts.chapter_above_title and user_opts.chapter_above_title_offset or chapter_offset
     local title_h = no_title and 0 or user_opts.title_font_size
-    local title_offset = (no_chapter or not have_ch or user_opts.chapter_above_title) and user_opts.title_offset or user_opts.title_with_chapter_offset
+    local title_offset = (no_chapter or not chapter_index or user_opts.chapter_above_title) and user_opts.title_offset or user_opts.title_with_chapter_offset
     title_offset = no_title and 0 or title_offset
     local title_and_chapter_h_with_offset = chapter_h + chapter_offset + title_h + title_offset
 
@@ -2503,7 +2501,7 @@ layouts["compact"] = function ()
         chapter_title_y = title_y + title_h + chapter_offset
     else
         chapter_title_y = user_opts.osc_height + chapter_offset
-        title_y = (no_chapter or not have_ch) and (user_opts.osc_height + title_offset) or (chapter_title_y + chapter_h + user_opts.title_with_chapter_offset)
+        title_y = (no_chapter or not chapter_index) and (user_opts.osc_height + title_offset) or (chapter_title_y + chapter_h + user_opts.title_with_chapter_offset)
     end
 
     -- osc title
@@ -2520,7 +2518,7 @@ layouts["compact"] = function ()
 
     -- chapter title
     if user_opts.show_chapter_title then
-        elements["chapter_title"].visible = not no_chapter and have_ch
+        elements["chapter_title"].visible = not no_chapter and chapter_index
         geo = {x = 25, y = refY - chapter_title_y, an = 1, w = osc_geo.w - 60, h = user_opts.chapter_title_font_size}
         lo = add_layout("chapter_title")
         lo.geometry = geo
@@ -4210,7 +4208,7 @@ observe_cached("mute", request_tick)
 observe_cached("eof-reached", request_tick)
 observe_cached("ontop", request_init)
 observe_cached("speed", request_tick)
-observe_cached("chapter", request_tick)
+observe_cached("chapter", request_init)
 -- ensure compatibility with auto loop scripts
 mp.observe_property("loop-file", "bool", function(_, val)
     state.file_loop = (val ~= false)
